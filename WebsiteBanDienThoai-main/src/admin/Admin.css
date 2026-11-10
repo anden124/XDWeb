@@ -1,0 +1,117 @@
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f1f5f9;
+}
+
+/* Sidebar bên trái */
+.sidebar {
+  width: 260px;
+  background-color: #1e293b;
+  color: white;
+  padding: 20px;
+}
+.sidebar h2 { margin-bottom: 30px; color: #38bdf8; text-align: center; }
+.sidebar ul { list-style: none; }
+.sidebar li { 
+  padding: 12px 15px; 
+  cursor: pointer; 
+  border-radius: 8px; 
+  margin-bottom: 5px;
+  transition: 0.3s;
+}
+.sidebar li:hover { background-color: #334155; }
+.sidebar li.active { background-color: #2563eb; }
+
+
+.admin-main {
+  flex: 1;
+  padding: 30px;
+}
+
+.admin-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+
+/* Form nhập liệu */
+.admin-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px dashed #e2e8f0;
+}
+.admin-form input, .admin-form select {
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+.btn-add {
+  grid-column: span 2;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Bảng danh sách sản phẩm */
+.img-admin {
+    width: 60px;          
+    height: 60px;         
+    object-fit: cover;    /* Giúp ảnh không bị móp méo khi ép khung */
+    border-radius: 4px;   
+    display: block;       
+}
+
+
+.admin-table td {
+    vertical-align: middle; 
+    height: 80px;           
+}
+.admin-table th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid #e2e8f0; }
+.admin-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+
+.btn-delete { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+.btn-edit { background: #f59e0b; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-right: 5px; cursor: pointer; }
+
+
+
+
+
+/*********** Trang Quản Lý User **********/
+/* HEADER */
+
+.admin-header-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* ROLE */
+
+.role-admin{
+    background: #dc3545;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.role-user{
+    background: #0d6efd;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+}

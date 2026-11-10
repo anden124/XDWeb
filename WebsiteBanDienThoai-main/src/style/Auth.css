@@ -1,0 +1,148 @@
+/* PAGE */
+
+.auth-page{
+    min-height: 100vh;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+}
+
+/* CARD */
+
+.auth-card{
+    width: 100%;
+    max-width: 460px;
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* HEADER */
+
+.auth-header{
+    display: flex;
+    border-bottom: 1px solid #eee;
+}
+
+.auth-header button{
+    flex: 1;
+    height: 58px;
+    border: none;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #666;
+}
+
+.auth-header button.active{
+    color: #d70018;
+    border-bottom: 3px solid #d70018;
+}
+
+/* FORM */
+
+.auth-form{
+    padding: 35px;
+}
+
+
+/* SUBTITLE */
+
+.auth-subtitle{
+    text-align: center;
+    color: #777;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+/* GROUP */
+
+.form-group{
+    margin-bottom: 18px;
+}
+
+.form-group label{
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input{
+    width: 100%;
+    height: 50px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 0 15px;
+    font-size: 15px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.form-group input:focus{
+    border-color: #d70018;
+}
+
+/* BUTTON */
+
+.btn-auth-submit{
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 10px;
+    background: #d70018;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+/* BACK */
+
+.auth-back-home{
+    text-align: center;
+    margin-top: 20px;
+}
+
+.auth-back-home span{
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Nội dung bên trong form */
+.auth-form {
+    padding: 30px;
+}
+
+.auth-form .logo-text {
+    text-align: center;
+    color: #013862;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.btn-auth-submit:hover {
+    background: #630500;
+} 
+
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+    .auth-form{
+        padding: 25px 20px;
+    }
+
+    .logo-text{
+        font-size: 28px;
+    }
+
+}
