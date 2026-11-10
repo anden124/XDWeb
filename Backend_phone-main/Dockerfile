@@ -11,4 +11,4 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
-CMD exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"
+CMD php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"
