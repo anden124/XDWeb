@@ -9,12 +9,6 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-# Tạo env tạm
-RUN cp .env.example .env
-
 RUN composer install --no-dev --optimize-autoloader
 
-RUN php artisan key:generate || true
-RUN php artisan config:cache || true
-
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+CMD exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"

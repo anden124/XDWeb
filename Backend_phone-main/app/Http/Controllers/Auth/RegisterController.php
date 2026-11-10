@@ -74,6 +74,7 @@ class RegisterController extends Controller
                 'status' => 'success',
                 'message' => 'Chào mừng!',
                 'user' => $user,
+                'access_token' => $user->createToken('customer-token')->plainTextToken,
             ], 200);
         }
 
@@ -87,15 +88,9 @@ class RegisterController extends Controller
 
 
     // Xem thông tin cá nhân
-    public function showProfile()
+    public function showProfile(Request $request)
     {
-       $user = User::where('role', 'user')->first(); 
-
-        if (!$user) {
-           return response()->json(['message' => 'Chưa có tài khoản nào!'], 404);
-        }
-
-        return response()->json(['status' => 'success', 'data' => $user]);
+        return response()->json(['status' => 'success', 'data' => $request->user()]);
     }
 
 
@@ -103,15 +98,7 @@ class RegisterController extends Controller
     // Cập nhật thông tin
     public function updateProfile(Request $request)
     {
-       // Tìm đúng tài khoản có role là 'user' để update
-        $user = User::where('role', 'user')->first();
-
-        if (!$user) {
-           return response()->json([
-               'status' => 'error', 
-               'message' => 'Không tìm thấy tài khoản nào!'
-            ], 404);
-        }
+        $user = $request->user();
 
         // Kiểm tra dữ liệu gửi lên
         $validator = Validator::make($request->all(), [

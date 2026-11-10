@@ -9,8 +9,6 @@ use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ProductController as UserProductController;
 use App\Http\Controllers\PostController;
-use Illuminate\Support\Facades\DB;       
-use Illuminate\Support\Facades\Artisan;
 
 // Đăng nhập , đăng ký user
 Route::post('/register', [RegisterController::class, 'register']);
@@ -22,8 +20,10 @@ Route::post('orders', [OrderController::class, 'store']);
 
 
 //Xem profile và update user
-Route::get('/profile', [RegisterController::class, 'showProfile']);
-Route::post('/profile/update', [RegisterController::class, 'updateProfile']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile', [RegisterController::class, 'showProfile']);
+    Route::post('/profile/update', [RegisterController::class, 'updateProfile']);
+});
 
 
 //Tìm kiếm và hiển thị chi tiết sản phẩm
@@ -54,25 +54,4 @@ Route::prefix('admin')->group(function () {
         Route::put('users/{id}/status', [UserController::class, 'updateStatus']);
         Route::delete('users/{id}', [UserController::class, 'destroy']);
     });
-});
-Route::get('/migrate-database', function () {
-    try {
-        // Thêm dòng này để xóa cache cấu hình mà không cần dùng Shell
-        Artisan::call('config:clear'); 
-        Artisan::call('cache:clear');
-
-        // Chạy lệnh migrate
-        Artisan::call('migrate --force');
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Đã xóa cache và tạo bảng thành công!',
-            'output' => Artisan::output()
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Lỗi: ' . $e->getMessage()
-        ], 500);
-    }
 });
