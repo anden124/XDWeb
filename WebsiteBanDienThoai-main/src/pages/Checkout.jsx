@@ -1,5 +1,6 @@
   import React, { useContext, useState } from "react";
-  import { Link } from "react-router-dom";
+  import axios from "axios";
+  import { Link, useLocation } from "react-router-dom";
   import { CartContext } from "../context/CartContext";
 
   const PROVINCES = [
@@ -20,14 +21,16 @@
 
   const PAYMENT_METHODS = [
     { id: "cod",      label: "Thanh toán khi nhận hàng (COD)", icon: "💵" },
-    { id: "bank",     label: "Chuyển khoản ngân hàng",         icon: "🏦" },
-    { id: "momo",     label: "Ví MoMo",                        icon: "🟣" },
-    { id: "zalopay",  label: "ZaloPay",                        icon: "🔵" },
+    ...(import.meta.env.VITE_BANK_TRANSFER_ENABLED !== 'false'
+      ? [{ id: "bank", label: "Chuyển khoản ngân hàng", icon: "🏦" }]
+      : []),
   ];
 
   const Checkout = () => {
 
-    const { cartItems, clearCart } = useContext(CartContext);
+    const { cartItems: savedCart, clearCart } = useContext(CartContext);
+    const buyNow = useLocation().state?.buyNow;
+    const cartItems = buyNow ? [buyNow] : savedCart;
 
     const total      = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const shipping   = total >= 2000000 ? 0 : 30000;
@@ -46,9 +49,10 @@
 
     const [payment, setPayment] = useState("cod");
     const [errors,  setErrors]  = useState({});
-    const [success, setSuccess] = useState(false);
-    const [orderId]             = useState(`DH${Date.now().toString().slice(-6)}`);
-const [finalOrderTotal, setFinalOrderTotal] = useState(0);
+    const [order, setOrder] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState("");
+    const token = localStorage.getItem("access_token");
     const handleChange = (e) => {
       setForm({ ...form, [e.target.name]: e.target.value });
       setErrors({ ...errors, [e.target.name]: "" });
@@ -68,23 +72,60 @@ const [finalOrderTotal, setFinalOrderTotal] = useState(0);
         errs.address = "Vui lòng nhập địa chỉ";
       return errs;
     };
-const handleOrder = () => {
-  const errs = validate();
-  if (Object.keys(errs).length) {
-    setErrors(errs);
-    return;
-  }
+    const handleOrder = async () => {
+      if (submitting || !cartItems.length) return;
 
-  setFinalOrderTotal(finalTotal); // ✔️ lúc này mới hợp lệ
+      setSubmitError("");
+      const errs = validate();
+      if (Object.keys(errs).length) {
+        setErrors(errs);
+        return;
+      }
 
-  clearCart();
-  setSuccess(true);
-};
+      setSubmitting(true);
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders`, {
+          customer_name: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || null,
+          address: [form.address, form.ward, form.district, form.province]
+            .map(part => part.trim()).filter(Boolean).join(", "),
+          note: form.note.trim() || null,
+          payment_method: payment === "bank" ? "banking" : "cod",
+          items: cartItems.map(item => ({
+            product_id: item.productId ?? item.id,
+            product_variant_id: item.variantId ?? null,
+            quantity: item.quantity,
+          })),
+        }, { headers: { Authorization: `Bearer ${token}` } });
+        setOrder(response.data.data);
+        if (!buyNow) clearCart();
+      } catch (error) {
+        if (error.response?.status === 401) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("user");
+        }
+        setSubmitError(error.response?.data?.message || "Không thể đặt hàng. Vui lòng thử lại.");
+      } finally {
+        setSubmitting(false);
+      }
+    };
 
     // ════════════════════════════════
     //   TRANG ĐẶT HÀNG THÀNH CÔNG
     // ════════════════════════════════
-    if (success) {
+    if (!token) {
+      return (
+        <section className="container py-5">
+          <p>{localStorage.getItem("admin_token")
+            ? "Tài khoản admin không thể đặt hàng."
+            : "Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng."}</p>
+          <Link to="/login">Đăng nhập khách hàng</Link>
+        </section>
+      );
+    }
+
+    if (order) {
       return (
         <div style={{
           fontFamily:  "Be Vietnam Pro",
@@ -114,8 +155,8 @@ const handleOrder = () => {
             marginBottom:  "28px",
           }}>
             {[
-              ["Mã đơn hàng",    `#${orderId}`],
-             ["Tổng tiền", `${finalOrderTotal.toLocaleString()}đ`],
+              ["Mã đơn hàng",    `#${order.order_code}`],
+              ["Tổng tiền", `${Number(order.total_amount).toLocaleString("vi-VN")}đ`],
               ["Thanh toán",     PAYMENT_METHODS.find((m) => m.id === payment)?.label],
               ["Giao đến",       `${form.address}, ${form.district ? form.district + ", " : ""}${form.province}`],
               ["Thời gian giao", "2 – 5 ngày làm việc"],
@@ -455,7 +496,7 @@ const handleOrder = () => {
                   {/* Ảnh + badge */}
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <img
-                      src={`${import.meta.env.VITE_API_BASE_URL}/${item.image}`}
+                      src={item.imageUrl || `${import.meta.env.VITE_API_BASE_URL}/${item.image}`}
                       alt={item.name}
                       style={{
                         width:        "52px",
@@ -552,8 +593,10 @@ const handleOrder = () => {
                 <span>{finalTotal.toLocaleString()}đ</span>
               </div>
 
+              {submitError && <p role="alert" style={{ color: "#b91c1c" }}>{submitError}</p>}
               <button
                 onClick={handleOrder}
+                disabled={submitting}
                 style={{
                   width:        "100%",
                   marginTop:    "20px",
@@ -567,7 +610,7 @@ const handleOrder = () => {
                   fontSize:     "15px",
                 }}
               >
-                Đặt hàng ngay
+                {submitting ? "Đang gửi đơn..." : "Đặt hàng ngay"}
               </button>
 
               <div style={{ marginTop: "15px", textAlign: "center" }}>

@@ -22,9 +22,15 @@ import Checkout from "./pages/Checkout";
 
 import { CartContext } from "./context/CartContext";
 
-import Admin from "./admin/Admin";
+import Admin, { AdminProductList } from "./admin/Admin";
+import ProductEditor from "./admin/ProductEditor";
+import Inventory from "./admin/Inventory";
+import Brands from "./admin/Brands";
 import AdminLogin from "./admin/AdminLogin";
 import User from "./admin/User";
+import Orders from "./admin/Orders";
+import Account from "./pages/Account";
+import PasswordRecovery from "./pages/PasswordRecovery";
 
 
 /* ================= HEADER ================= */
@@ -94,6 +100,7 @@ const FullHeader = ({
 
                 <div className="user-text">
                   Xin chào, <strong>{user.name}</strong><br />
+                  <Link to="/tai-khoan">Tài khoản và đơn hàng</Link><br />
 
                   <span
                     onClick={handleLogout}
@@ -369,10 +376,13 @@ function UserLayout() {
           <Route path="/tin-tuc" element={<NewsSection />} />
 
           <Route path="/login" element={<Auth />} />
+          <Route path="/quen-mat-khau" element={<PasswordRecovery key="forgot" />} />
+          <Route path="/dat-lai-mat-khau" element={<PasswordRecovery key="reset" resetting />} />
 
           <Route path="/cart" element={<Cart />} />
 
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/tai-khoan" element={<Account onProfileChange={setUser} />} />
 
         </Routes>
 
@@ -402,11 +412,18 @@ function App() {
 
       {/* ADMIN */}
 
-      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin" element={<Admin />}>
+        <Route index element={<AdminProductList />} />
+        <Route path="products/new" element={<ProductEditor />} />
+        <Route path="products/:productId/edit" element={<ProductEditor />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="brands" element={<Brands />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="users" element={<User />} />
+      </Route>
 
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      <Route path="/admin/users" element={<User />} />
 
     </Routes>
 

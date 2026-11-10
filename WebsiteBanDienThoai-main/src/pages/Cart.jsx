@@ -95,7 +95,7 @@ const Cart = () => {
 
               {/* HÌNH */}
  <img
-  src={`${import.meta.env.VITE_API_BASE_URL}/${item.image}`}
+  src={item.imageUrl || `${import.meta.env.VITE_API_BASE_URL}/${item.image}`}
   alt={item.name}
   style={{
     width: "80px",

@@ -25,6 +25,8 @@ function AdminLogin() {
       const token = res.data.access_token || res.data.token;
       
       if (token) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
         localStorage.setItem('admin_token', token);
         localStorage.setItem('admin_user', JSON.stringify(res.data.user));
         

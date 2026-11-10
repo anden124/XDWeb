@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '../style/Auth.css';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
+  const [query] = useSearchParams();
+  const [notice, setNotice] = useState(query.get('verified') === '1' ? 'Email đã được xác nhận. Bạn có thể đăng nhập.' : '');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +25,10 @@ const Auth = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
+    setNotice('');
+    setError('');
+    setBusy(true);
     const url = isLogin ? `${import.meta.env.VITE_API_BASE_URL}/api/login` : `${import.meta.env.VITE_API_BASE_URL}/api/register`;
 
     try {
@@ -34,13 +42,33 @@ const Auth = () => {
           alert("Chào mừng " + response.data.user.name + " đã quay trở lại!");
           window.location.href = import.meta.env.BASE_URL;
         } else {
-          alert("Đăng ký thành công! Mời bạn đăng nhập.");
-          setIsLogin(true); 
+          setNotice(response.data.message);
+          setIsLogin(true);
         }
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Lỗi nhập liệu, vui lòng kiểm tra lại!";
-      alert("Thất bại: " + errorMsg);
+      const response = error.response?.data;
+      setError(Object.values(response?.errors ?? {}).flat()[0] || response?.message || 'Không thể tiếp tục. Vui lòng thử lại.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resendEmail = async () => {
+    if (!formData.email.trim()) {
+      setError('Vui lòng nhập email cần xác nhận.');
+      return;
+    }
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/email/resend`, { email: formData.email.trim() });
+      setNotice(response.data.message);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Không thể gửi lại email.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -55,6 +83,8 @@ const Auth = () => {
         <form className="auth-form" onSubmit={handleSubmit}>
           <h1 className="logo-text" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>PHONESTORE</h1>
           <p className="auth-subtitle">{isLogin ? "Vui lòng đăng nhập để tiếp tục" : "Tạo tài khoản mới để mua sắm"}</p>
+          {notice && <p className="auth-notice" role="status">{notice}</p>}
+          {error && <p className="auth-notice auth-notice-error" role="alert">{error}</p>}
           
           {!isLogin && (
             <>
@@ -71,7 +101,7 @@ const Auth = () => {
 
           <div className="form-group">
             <label>Email</label>
-            <input type="email" name="email" onChange={handleChange} placeholder="email@gmail.com" required />
+            <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="email@gmail.com" required />
           </div>
 
           <div className="form-group">
@@ -86,7 +116,11 @@ const Auth = () => {
             </div>
           )}
 
-          <button type="submit" className="btn-auth-submit">
+          {isLogin && import.meta.env.VITE_CUSTOMER_EMAIL_ENABLED !== 'false' && <div className="auth-help-links">
+            <Link to="/quen-mat-khau">Quên mật khẩu?</Link>
+            <button type="button" onClick={resendEmail} disabled={busy}>Gửi lại email xác nhận</button>
+          </div>}
+          <button type="submit" className="btn-auth-submit" disabled={busy}>
             {isLogin ? "Đăng nhập ngay" : "Tạo tài khoản"}
           </button>
 

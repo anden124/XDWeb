@@ -37,6 +37,8 @@ jobs:
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           VITE_API_BASE_URL: https://xdweb-laravel.onrender.com
+          VITE_CUSTOMER_EMAIL_ENABLED: 'false'
+          VITE_BANK_TRANSFER_ENABLED: 'false'
       - uses: actions/upload-pages-artifact@v4
         with:
           path: WebsiteBanDienThoai-main/dist

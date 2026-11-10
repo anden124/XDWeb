@@ -146,3 +146,11 @@
     }
 
 }
+
+.btn-auth-submit:disabled { opacity: .65; cursor: wait; }
+.auth-notice { margin: 0 0 15px; padding: 10px 12px; border-radius: 8px; background: #e9f7ee; color: #176039; }
+.auth-notice-error { background: #fdebed; color: #9a1e30; }
+.auth-help-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.auth-help-links a, .auth-help-links button, .auth-back-home a { color: #8a1024; font: inherit; font-size: 14px; }
+.auth-help-links button { padding: 0; border: 0; background: none; text-decoration: underline; cursor: pointer; }
+.auth-form label.form-group { display: grid; gap: 6px; }
