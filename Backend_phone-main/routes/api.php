@@ -6,21 +6,30 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\OrderController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\CustomerEmailController;
 use App\Http\Controllers\ProductController as UserProductController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ProductImageController;
+use App\Http\Middleware\CustomerMiddleware;
 
 // Đăng nhập , đăng ký user
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [RegisterController::class, 'login']);
+Route::get('/email/verify/{user}/{hash}', [CustomerEmailController::class, 'verify'])
+    ->middleware('signed:relative')->name('customer.verify');
+Route::middleware('throttle:6,1')->group(function () {
+    Route::post('/email/resend', [CustomerEmailController::class, 'resend']);
+    Route::post('/forgot-password', [CustomerEmailController::class, 'forgot']);
+    Route::post('/reset-password', [CustomerEmailController::class, 'reset']);
+});
 
 
 //
-Route::post('orders', [OrderController::class, 'store']);
-
-
-//Xem profile và update user
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', CustomerMiddleware::class])->group(function () {
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders', [OrderController::class, 'mine']);
     Route::get('/profile', [RegisterController::class, 'showProfile']);
     Route::post('/profile/update', [RegisterController::class, 'updateProfile']);
 });
@@ -30,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/products/search', [UserProductController::class, 'search']);
 Route::get('/products', [UserProductController::class, 'index']);
 Route::get('/products/{id}', [UserProductController::class, 'show']);
+Route::get('/product-images/{id}', [ProductImageController::class, 'show'])->whereUuid('id');
 Route::get('/news/latest', [PostController::class, 'getLatestNews']);
 
 
@@ -42,7 +52,10 @@ Route::prefix('admin')->group(function () {
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
 
         Route::apiResource('categories', CategoryController::class);
+        Route::get('brands/options', [BrandController::class, 'options']);
+        Route::apiResource('brands', BrandController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('products', ProductController::class);
+        Route::patch('products/{id}/stock', [ProductController::class, 'adjustStock']);
 
         Route::get('orders', [OrderController::class, 'index']);
         Route::get('orders/{id}', [OrderController::class, 'show']);

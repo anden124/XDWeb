@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,10 +22,9 @@ class OrderController extends Controller
             'address' => 'required|string|max:255',
             'note' => 'nullable|string',
             'payment_method' => 'nullable|string|in:cod,banking',
-            'shipping_fee' => 'nullable|numeric|min:0',
-            'discount_amount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|integer',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -32,8 +32,6 @@ class OrderController extends Controller
 
         try {
             $subtotal = 0;
-            $shippingFee = $request->shipping_fee ?? 0;
-            $discountAmount = $request->discount_amount ?? 0;
 
             $orderItemsData = [];
 
@@ -56,7 +54,18 @@ class OrderController extends Controller
                     ], 422);
                 }
 
-                if ($product->quantity < $item['quantity']) {
+                $variantId = $item['product_variant_id'] ?? null;
+                $variant = $variantId ? $product->variants()->lockForUpdate()->find($variantId) : null;
+                if (($variantId && !$variant) || (!$variantId && $product->variants()->exists())) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Vui lòng chọn lại phiên bản màu cho sản phẩm '.$product->name.'.',
+                    ], 422);
+                }
+
+                $stockItem = $variant ?? $product;
+                if ($stockItem->quantity < $item['quantity']) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
@@ -64,32 +73,29 @@ class OrderController extends Controller
                     ], 422);
                 }
 
-                $price = $product->sale_price && $product->sale_price > 0
-                    ? $product->sale_price
-                    : $product->price;
+                $price = $variant?->effectivePrice() ?? ($product->sale_price > 0 ? $product->sale_price : $product->price);
 
                 $itemSubtotal = $price * $item['quantity'];
                 $subtotal += $itemSubtotal;
 
                 $orderItemsData[] = [
                     'product_id' => $product->id,
+                    'product_variant_id' => $variant?->id,
                     'product_name' => $product->name,
+                    'variant_color' => $variant?->color,
                     'price' => $price,
                     'quantity' => $item['quantity'],
                     'subtotal' => $itemSubtotal,
                 ];
 
-                $product->decrement('quantity', $item['quantity']);
+                $stockItem->decrement('quantity', $item['quantity']);
             }
 
-            $totalAmount = $subtotal + $shippingFee - $discountAmount;
-
-            if ($totalAmount < 0) {
-                $totalAmount = 0;
-            }
+            $shippingFee = $subtotal >= 2000000 ? 0 : 30000;
+            $totalAmount = $subtotal + $shippingFee;
 
             $order = Order::create([
-                'user_id' => auth()->check() ? auth()->id() : null,
+                'user_id' => $request->user()->id,
                 'order_code' => 'DH' . now()->format('YmdHis') . strtoupper(Str::random(4)),
                 'customer_name' => $request->customer_name,
                 'email' => $request->email,
@@ -98,7 +104,7 @@ class OrderController extends Controller
                 'note' => $request->note,
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
-                'discount_amount' => $discountAmount,
+                'discount_amount' => 0,
                 'total_amount' => $totalAmount,
                 'payment_method' => $request->payment_method ?? 'cod',
                 'payment_status' => 'unpaid',
@@ -109,7 +115,9 @@ class OrderController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $row['product_id'],
+                    'product_variant_id' => $row['product_variant_id'],
                     'product_name' => $row['product_name'],
+                    'variant_color' => $row['variant_color'],
                     'price' => $row['price'],
                     'quantity' => $row['quantity'],
                     'subtotal' => $row['subtotal'],
@@ -128,18 +136,33 @@ class OrderController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
+            report($e);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi tạo đơn hàng',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
+    public function mine(Request $request)
+    {
+        $orders = Order::with('items')
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(10);
+
+        return response()->json(['success' => true, 'data' => $orders]);
+    }
+
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'items'])->latest();
+        $filters = $request->validate(['user_id' => 'sometimes|required|integer|min:1']);
+        $query = Order::with(['user', 'items'])->latest()->orderByDesc('id');
+        if (isset($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
 
         if ($request->filled('keyword')) {
             $keyword = $request->keyword;
@@ -183,27 +206,35 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, string $id)
     {
-        $order = Order::find($id);
-
-        if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy đơn hàng'
-            ], 404);
-        }
-
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|in:pending,confirmed,shipping,completed,cancelled'
         ]);
 
-        $order->update([
-            'status' => $request->status
-        ]);
+        return DB::transaction(function () use ($id, $validated) {
+            $order = Order::lockForUpdate()->find($id);
+            abort_if(!$order, 404, 'Không tìm thấy đơn hàng');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật trạng thái đơn hàng thành công',
-            'data' => $order
-        ]);
+            $status = $validated['status'];
+            abort_if($order->status === 'cancelled' && $status !== 'cancelled', 422, 'Đơn đã hủy không thể mở lại.');
+            abort_if($order->status === 'completed' && $status !== 'completed', 422, 'Đơn đã hoàn tất không thể đổi trạng thái.');
+
+            if ($status === 'cancelled' && $order->status !== 'cancelled') {
+                foreach ($order->items()->orderBy('product_id')->get() as $item) {
+                    if ($item->product_variant_id) {
+                        ProductVariant::whereKey($item->product_variant_id)->increment('quantity', $item->quantity);
+                    } else {
+                        Product::whereKey($item->product_id)->increment('quantity', $item->quantity);
+                    }
+                }
+            }
+
+            $order->update(['status' => $status]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật trạng thái đơn hàng thành công',
+                'data' => $order,
+            ]);
+        }, 3);
     }
 }

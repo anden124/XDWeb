@@ -19,6 +19,7 @@ class User extends Authenticatable
         'phone',
         'address',
         'status',
+        'email_verification_required',
     ];
 
     protected $hidden = [
@@ -32,6 +33,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'boolean',
+            'email_verification_required' => 'boolean',
         ];
+    }
+
+    public function needsEmailVerification(): bool
+    {
+        return $this->email_verification_required && !$this->email_verified_at;
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }

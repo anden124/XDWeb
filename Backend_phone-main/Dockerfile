@@ -11,4 +11,10 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
+ENV CUSTOMER_EMAIL_ENABLED=false \
+    PRODUCT_IMAGES_IN_DATABASE=true \
+    APP_URL=https://xdweb-laravel.onrender.com \
+    FRONTEND_URL=https://anden124.github.io/XDWeb/ \
+    FRONTEND_HASH_ROUTING=true
+
 CMD php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"

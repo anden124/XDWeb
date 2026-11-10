@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\VerifyCustomerEmail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator; // Thêm dòng này để không lỗi 500
 
@@ -18,7 +18,7 @@ class RegisterController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|max:72|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -28,19 +28,28 @@ class RegisterController extends Controller
             ], 422);
         }
 
+        $requiresVerification = config('app.customer_email_enabled');
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'user', // Mặc định là user
+            'email_verification_required' => $requiresVerification,
             'status' => 1,   
             'phone' => $request->phone,
             'address' => $request->address,
         ]);
 
+        $sent = $requiresVerification && rescue(function () use ($user): bool {
+            $user->notify(new VerifyCustomerEmail);
+            return true;
+        }, false);
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Đăng ký thành công!',
+            'message' => !$requiresVerification ? 'Đã tạo tài khoản. Bạn có thể đăng nhập.'
+                : ($sent ? 'Đã tạo tài khoản. Hãy kiểm tra email để xác nhận trước khi đăng nhập.'
+                    : 'Đã tạo tài khoản nhưng chưa gửi được email. Hãy dùng nút Gửi lại email xác nhận.'),
             'user' => $user
         ], 201);
     }
@@ -55,15 +64,15 @@ class RegisterController extends Controller
             'password' => 'required|string',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $user = User::where('email', $request->email)->first();
 
         // Thực hiện đăng nhập
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+        if ($user && Hash::check($request->password, $user->password)) {
+            abort_unless($user->role === 'user', 403, 'Vui lòng đăng nhập tại trang quản trị.');
+            abort_if($user->needsEmailVerification(), 403, 'Bạn cần xác nhận email trước khi đăng nhập.');
 
             // Kiểm tra trạng thái tài khoản
             if ($user->status != 1) {
-                Auth::logout();
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Tài khoản của bạn đang bị khóa.'

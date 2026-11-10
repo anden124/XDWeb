@@ -33,7 +33,7 @@ class ProductController extends Controller
     public function show($id)
     {
         // Tìm sản phẩm theo ID
-        $product = Product::find($id);
+        $product = Product::with('variants')->where('status', 1)->find($id);
 
         // Nếu không tìm thấy sản phẩm
         if (!$product) {
@@ -63,6 +63,15 @@ class ProductController extends Controller
     $hz = $request->query('hz');
     $os = $request->query('os');
     $feature = $request->query('feature');
+    $onlyDeals = $request->boolean('has_sale');
+    if ($onlyDeals) {
+        $discounted = fn ($item) => $item->where('sale_price', '>', 0)->whereColumn('sale_price', '<', 'price');
+        $query->where(function ($products) use ($discounted) {
+            $products->where(fn ($product) => $discounted($product->doesntHave('variants')))
+                ->orWhereHas('variants', fn ($variant) => $discounted($variant)->where('quantity', '>', 0));
+        })->with(['variants' => fn ($variant) => $discounted($variant)->where('quantity', '>', 0)
+            ->reorder()->orderBy('sale_price')->orderBy('id')]);
+    }
 
     // Xử lý TỪ KHÓA (Tên/Hãng)
     if ($keyword !== '') {
@@ -83,7 +92,7 @@ class ProductController extends Controller
                    ->where('sale_price', '<=', $maxPrice);
             })->orWhere(function($q2) use ($maxPrice) {
                 // Nếu không có giá khuyến mãi, thì price phải <= maxPrice
-                $q2->where('sale_price', 0)
+                $q2->where(fn ($sale) => $sale->whereNull('sale_price')->orWhere('sale_price', '<=', 0))
                    ->where('price', '<=', $maxPrice);
             });
         });
@@ -124,6 +133,18 @@ class ProductController extends Controller
 
     // Lấy kết quả cuối cùng và trả về JSON
     $products = $query->get();
+    if ($onlyDeals) {
+        foreach ($products as $product) {
+            $variant = $product->variants->first();
+            if ($variant) {
+                $product->price = $variant->price;
+                $product->sale_price = $variant->sale_price;
+                $product->deal_variant_id = $variant->id;
+                $product->image = $variant->image ?: $product->image;
+            }
+            $product->unsetRelation('variants');
+        }
+    }
 
     return response()->json([
         'status' => 'success',

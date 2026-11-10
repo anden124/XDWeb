@@ -17,6 +17,7 @@ class Product extends Model
         'image',
         'short_description',
         'description',
+        'specifications',
         'brand',
         'model',
         'color',
@@ -30,5 +31,10 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('id');
     }
 }

@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query()->latest();
+        $query = User::withCount('orders')->latest();
 
         if ($request->filled('keyword')) {
             $keyword = $request->keyword;

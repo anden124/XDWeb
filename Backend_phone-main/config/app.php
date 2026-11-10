@@ -53,6 +53,10 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+    'frontend_hash_routing' => env('FRONTEND_HASH_ROUTING', false),
+    'customer_email_enabled' => env('CUSTOMER_EMAIL_ENABLED', true),
+    'product_images_in_database' => env('PRODUCT_IMAGES_IN_DATABASE', false),
 
     /*
     |--------------------------------------------------------------------------
