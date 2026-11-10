@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 
 const Cart = () => {
@@ -24,12 +24,12 @@ const Cart = () => {
         <div style={{fontSize:"70px"}}>🛒</div>
         <h2>Giỏ hàng trống</h2>
         <p>Hãy thêm sản phẩm để tiếp tục mua sắm</p>
-        <a href="/" style={{
+        <Link to="/" style={{
           color:"#E24B4A",
           textDecoration:"underline"
         }}>
           Tiếp tục mua sắm
-        </a>
+        </Link>
       </div>
     );
   }
@@ -246,11 +246,11 @@ const Cart = () => {
               marginTop:"15px",
               textAlign:"center"
             }}>
-              <a href="/" style={{
+              <Link to="/" style={{
                 textDecoration:"underline"
               }}>
                 Tiếp tục mua sắm
-              </a>
+              </Link>
             </div>
 
           </div>

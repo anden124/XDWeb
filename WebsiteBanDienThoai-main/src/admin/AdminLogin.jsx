@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function AdminLogin() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -101,7 +101,7 @@ function AdminLogin() {
         </button>
 
         <div style={{ textAlign: 'center', marginTop: '20px' }}>
-           <a href="/" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>← Quay lại trang chủ</a>
+           <Link to="/" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>← Quay lại trang chủ</Link>
         </div>
       </form>
     </div>

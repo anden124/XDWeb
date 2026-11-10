@@ -1,4 +1,5 @@
   import React, { useContext, useState } from "react";
+  import { Link } from "react-router-dom";
   import { CartContext } from "../context/CartContext";
 
   const PROVINCES = [
@@ -139,8 +140,8 @@ const handleOrder = () => {
             ))}
           </div>
 
-          <a
-            href="/"
+          <Link
+            to="/"
             style={{
               display:        "inline-block",
               background:     "#E24B4A",
@@ -153,7 +154,7 @@ const handleOrder = () => {
             }}
           >
             Về trang chủ
-          </a>
+          </Link>
 
         </div>
       );
@@ -570,12 +571,12 @@ const handleOrder = () => {
               </button>
 
               <div style={{ marginTop: "15px", textAlign: "center" }}>
-                <a
-                  href="/cart"
+                <Link
+                  to="/cart"
                   style={{ textDecoration: "underline", color: "#555", fontSize: "14px" }}
                 >
                   ← Quay lại giỏ hàng
-                </a>
+                </Link>
               </div>
 
               {/* Trust badges */}

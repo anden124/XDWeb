@@ -32,7 +32,7 @@ const Auth = () => {
             localStorage.setItem('access_token', response.data.access_token);
           }
           alert("Chào mừng " + response.data.user.name + " đã quay trở lại!");
-          window.location.href = '/'; 
+          window.location.href = import.meta.env.BASE_URL;
         } else {
           alert("Đăng ký thành công! Mời bạn đăng nhập.");
           setIsLogin(true); 

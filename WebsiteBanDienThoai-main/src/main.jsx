@@ -2,13 +2,15 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, HashRouter } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
 
+const Router = import.meta.env.BASE_URL === '/' ? BrowserRouter : HashRouter
+
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
+  <Router>
     <CartProvider>
       <App />
     </CartProvider>
-  </BrowserRouter>
+  </Router>
 )
