@@ -36,7 +36,7 @@ jobs:
       - run: npm run build -- --base "$PAGES_BASE_PATH/"
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          VITE_API_BASE_URL: https://backend-phone-9p76.onrender.com
+          VITE_API_BASE_URL: https://xdweb-laravel.onrender.com
       - uses: actions/upload-pages-artifact@v4
         with:
           path: WebsiteBanDienThoai-main/dist
